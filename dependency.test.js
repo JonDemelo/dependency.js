@@ -44,14 +44,16 @@ describe("Testing loading strategies", () => {
   });
 
   test("Empty graph, then generating a new node without dependencies or dependents", () => {
-    const nodeKey = "m1";
+    const nodeKey = "n1";
     const dep = new Dependency();
     const res = dep.addNode(nodeKey);
     expect(res === "ADDED" && dep.hasNodes()).toBe(true);
   });
+});
 
+describe("Testing combinations of add and remove node", () => {
   test("Empty graph, then generating a new node without dependencies or dependents, then removing it", () => {
-    const nodeKey = "m1";
+    const nodeKey = "n1";
     const dep = new Dependency();
     const res = dep.addNode(nodeKey);
     const resrm = dep.removeNode(nodeKey);
@@ -59,8 +61,8 @@ describe("Testing loading strategies", () => {
   });
 
   test("Empty graph, then generating a base node, and then a second node that depends on the first node", () => {
-    const nodeKey = "m1";
-    const dependerNodeKey = "m2";
+    const nodeKey = "n1";
+    const dependerNodeKey = "n2";
 
     const dep = new Dependency();
     const res = dep.addNode(nodeKey);
@@ -74,8 +76,8 @@ describe("Testing loading strategies", () => {
   });
 
   test("Empty graph, then generating a base node, and then a second node that depends on the first node, then removing node 1", () => {
-    const nodeKey = "m1";
-    const dependerNodeKey = "m2";
+    const nodeKey = "n1";
+    const dependerNodeKey = "n2";
 
     const dep = new Dependency();
     const res = dep.addNode(nodeKey);
@@ -91,7 +93,7 @@ describe("Testing loading strategies", () => {
   });
 });
 
-describe("Testing basic dependency relationships, loading two nodes", () => {
+describe("Testing dependency relationships, between two nodes", () => {
   test("Node two depends on node one", () => {
     const nodeKeyDependable = "n1";
     const nodeKeyDepender = "n2";
@@ -126,13 +128,54 @@ describe("Testing basic dependency relationships, loading two nodes", () => {
   });
 
   test("Node two is a not depended by node one", () => {
-    const nodeKeyDependable = "m1";
-    const nodeKeyDepender = "m2";
+    const nodeKeyDependable = "n1";
+    const nodeKeyDepender = "n2";
 
     const dep = new Dependency();
     dep.addNode(nodeKeyDependable);
     dep.addNode(nodeKeyDepender, [nodeKeyDependable]);
 
     expect(dep.dependedBy(nodeKeyDepender, nodeKeyDependable)).toBe(false);
+  });
+});
+
+describe("Testing cycles", () => {
+  test("Will make a cycle, two nodes, where root is trying to add the end as a dependency", () => {
+    const nodeKeyRoot = "n1";
+    const nodeKeyEnd = "n2";
+
+    const dep = new Dependency();
+    dep.addNode(nodeKeyRoot);
+    dep.addNode(nodeKeyEnd, [nodeKeyRoot]);
+
+    expect(dep.willMakeDependencyCycle(nodeKeyRoot, nodeKeyEnd)).toBe(true);
+  });
+
+  test("Will make a cycle, three nodes, where root is trying to add the end as a dependency", () => {
+    const nodeKeyRoot = "n1";
+    const nodeKeyMiddle = "n2";
+    const nodeKeyEnd = "n3";
+
+    const dep = new Dependency();
+    dep.addNode(nodeKeyRoot);
+    dep.addNode(nodeKeyMiddle, [nodeKeyRoot]);
+    dep.addNode(nodeKeyEnd, [nodeKeyMiddle]);
+
+    expect(dep.willMakeDependencyCycle(nodeKeyRoot, nodeKeyEnd)).toBe(true);
+  });
+
+  test("Will not make a cycle, two dependency associated nodes plus one unattached node that is being checked", () => {
+    const nodeKeyRoot = "n1";
+    const nodeKeyEnd = "n2";
+    const nodeKeyUnattached = "n3";
+
+    const dep = new Dependency();
+    dep.addNode(nodeKeyRoot);
+    dep.addNode(nodeKeyEnd, [nodeKeyRoot]);
+    dep.addNode(nodeKeyUnattached, []);
+
+    expect(dep.willMakeDependencyCycle(nodeKeyRoot, nodeKeyUnattached)).toBe(
+      false
+    );
   });
 });

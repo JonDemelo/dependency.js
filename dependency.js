@@ -44,7 +44,6 @@ export default class Dependency {
     return this._dependers[n1][n2] !== undefined;
   }
 
-  // TODO: Immediate. Handle extended?
   getDependers(n1) {
     if (!this.hasDependers(n1)) {
       return false;
@@ -53,7 +52,6 @@ export default class Dependency {
     return this._dependers[n1];
   }
 
-  // TODO: Immediate. Handle extended?
   getDependencies(n1) {
     if (!this.hasDependencies(n1)) {
       return false;
@@ -73,22 +71,8 @@ export default class Dependency {
       if (Array.isArray(dependencies)) {
         dependencies = dependencies.reduce((a, v) => ({ ...a, [v]: true }), {});
       }
-
-      if (this._dependencies[id]) {
-        Object.keys(this._dependencies[id]).forEach(
-          (k) => delete this._dependers[k][id]
-        );
-      }
-
-      this._dependencies[id] = dependencies;
-      Object.keys(dependencies).forEach((k) => {
-        if (this.isNode(k)) {
-          if (!this._dependers[k]) {
-            this._dependers[k] = {};
-          }
-          this._dependers[k] = { ...this._dependers[k], ...{ [id]: true } };
-        }
-      });
+      this._dependencies[id] = {};
+      this.updateDependencies(id, dependencies);
 
       this._numOfNodes += existed ? 0 : 1;
       // User can reflect their custom adjusted if being edited is different to them then a "fresh node".
@@ -133,5 +117,108 @@ export default class Dependency {
     } catch (e) {
       return false;
     }
+  }
+
+  updateDependencies(id, dependencies) {
+    if (!this.isNode(id)) {
+      return false;
+    }
+
+    if (this._dependencies[id]) {
+      Object.keys(this._dependencies[id]).forEach(
+        (k) => delete this._dependers[k][id]
+      );
+    }
+
+    this._dependencies[id] = dependencies;
+    Object.keys(dependencies).forEach((k) => {
+      if (this.isNode(k)) {
+        if (!this._dependers[k]) {
+          this._dependers[k] = {};
+        }
+        this._dependers[k] = { ...this._dependers[k], ...{ [id]: true } };
+      }
+    });
+
+    return true;
+  }
+
+  addDependency(dependent, dependency) {
+    if (
+      !dependent ||
+      !dependency ||
+      !this.isNode(dependent) ||
+      !this.isNode(dependency)
+    ) {
+      return false;
+    }
+
+    this._dependencies[dependent][dependency] = true;
+
+    if (!this._dependers[dependency]) {
+      this._dependers[dependency] = {};
+    }
+
+    this._dependers[dependency] = {
+      ...this._dependers[dependency],
+      ...{ [dependent]: true },
+    };
+
+    return true;
+  }
+
+  addDependencies(dependent, dependencies) {
+    dependencies.forEach((dependency) =>
+      this.addDependency(dependent, dependency)
+    );
+  }
+
+  removeDependency(dependent, dependency) {
+    if (
+      !dependent ||
+      !dependency ||
+      !this.isNode(dependent) ||
+      !this.isNode(dependency)
+    ) {
+      return false;
+    }
+
+    delete this._dependers[dependency][dependent];
+    delete this._dependencies[dependent][dependency];
+  }
+
+  removeDependencies(dependent, dependencies) {
+    dependencies.forEach((dependency) =>
+      this.removeDependency(dependent, dependency)
+    );
+  }
+
+  // Tests if adding targetID as a dependency to existingID will make a cycle.
+  willMakeDependencyCycle(existingID, targetID) {
+    if (this._cycleAllowed) {
+      // FUTURE: Implement cycle check for environment where cycles are allowed. Issue is that if a cycle is allowed, it will
+      // be potentially in the graph. And so once the first cycle is there, simple DFS or BFS will go forever. Would need an advanced algorithm that
+      // marks visited nodes so nothing repeats.
+      return;
+    }
+
+    const inDependencies = this.getDependencies(targetID);
+
+    const completesCycle = (id, dependancies) => {
+      const dependanciesArr = Object.keys(dependancies);
+
+      for (let index = 0; index < dependanciesArr.length; index++) {
+        const upID = dependanciesArr[index];
+        if (upID === id) {
+          return true;
+        }
+        if (completesCycle(id, this.getDependencies(upID))) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    return completesCycle(existingID, inDependencies);
   }
 }
