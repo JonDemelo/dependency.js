@@ -13,7 +13,7 @@ describe("Testing loading strategies", () => {
     const dependence = { [nodeKey]: {} };
     const dependers = { [nodeKey]: {} };
     const dep = new Dependency({
-      dependables: dependence,
+      dependencies: dependence,
       dependers: dependers,
     });
 
@@ -36,7 +36,7 @@ describe("Testing loading strategies", () => {
     };
 
     const dep = new Dependency({
-      dependables: dependables,
+      dependencies: dependables,
       dependers: dependers,
     });
 

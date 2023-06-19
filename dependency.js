@@ -1,8 +1,8 @@
 export default class Dependency {
   constructor(loadIns) {
-    this._dependencies = loadIns?.dependables || {}; // a: [b], where a depends on b.
+    this._dependencies = loadIns?.dependencies || {}; // {a: {b: true}}, where a depends on b.
     // Will always add to this even if no dependences, to avoid also needing to make another node tracking lookup.
-    this._dependers = loadIns?.dependers || {}; // a: [b] where b depends on a.
+    this._dependers = loadIns?.dependers || {}; // {a: {b: true}} where b depends on a.
     this._cycleAllowed = loadIns?.cycleAllowed || false;
     this._numOfNodes = Object.keys(this._dependencies).length; // Set base count on init. Updated via add/remove.
     // If maintained, avoid having to do a full O(n) Object.keys() lookup every time we need a full count of the nodes.
