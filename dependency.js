@@ -3,9 +3,17 @@ export default class Dependency {
     this._dependencies = loadIns?.dependencies || {}; // {a: {b: true}}, where a depends on b.
     // Will always add to this even if no dependences, to avoid also needing to make another node tracking lookup.
     this._dependers = loadIns?.dependers || {}; // {a: {b: true}} where b depends on a.
-    this._cycleAllowed = false; // loadIns?.cycleAllowed || false; // FUTURE: Expand support for cycles.
+    this._cycleAllowed = loadIns?.cycleAllowed || false; // FUTURE: Expand support for cycles.
     this._numOfNodes = Object.keys(this._dependencies).length; // Set base count on init. Updated via add/remove.
     // If maintained, avoid having to do a full O(n) Object.keys() lookup every time we need a full count of the nodes.
+  }
+
+  export() {
+    return {
+      dependancies: this._dependencies,
+      dependers: this._dependers,
+      cycleAllowed: this._cycleAllowed,
+    };
   }
 
   getNumberOfNodes() {
