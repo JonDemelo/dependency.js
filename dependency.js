@@ -3,7 +3,7 @@ export default class Dependency {
     this._dependencies = loadIns?.dependencies || {}; // {a: {b: true}}, where a depends on b.
     // Will always add to this even if no dependences, to avoid also needing to make another node tracking lookup.
     this._dependers = loadIns?.dependers || {}; // {a: {b: true}} where b depends on a.
-    this._cycleAllowed = loadIns?.cycleAllowed || false;
+    this._cycleAllowed = false; // loadIns?.cycleAllowed || false; // FUTURE: Expand support for cycles.
     this._numOfNodes = Object.keys(this._dependencies).length; // Set base count on init. Updated via add/remove.
     // If maintained, avoid having to do a full O(n) Object.keys() lookup every time we need a full count of the nodes.
   }
@@ -124,6 +124,10 @@ export default class Dependency {
       return false;
     }
 
+    if (Array.isArray(dependencies)) {
+      dependencies = dependencies.reduce((a, v) => ({ ...a, [v]: true }), {});
+    }
+
     if (this._dependencies[id]) {
       Object.keys(this._dependencies[id]).forEach(
         (k) => delete this._dependers[k][id]
@@ -136,7 +140,7 @@ export default class Dependency {
         if (!this._dependers[k]) {
           this._dependers[k] = {};
         }
-        this._dependers[k] = { ...this._dependers[k], ...{ [id]: true } };
+        this._dependers[k][id] = true;
       }
     });
 
@@ -194,31 +198,25 @@ export default class Dependency {
   }
 
   // Tests if adding targetID as a dependency to existingID will make a cycle.
+  // FUTURE: Implement cycle check for environment where cycles are allowed. Issue is that if a cycle is allowed, it will
+  // be potentially in the graph. And so once the first cycle is there, simple DFS or BFS will go forever. Would need an advanced algorithm that
+  // marks visited nodes so nothing repeats.
   willMakeDependencyCycle(existingID, targetID) {
     if (this._cycleAllowed) {
-      // FUTURE: Implement cycle check for environment where cycles are allowed. Issue is that if a cycle is allowed, it will
-      // be potentially in the graph. And so once the first cycle is there, simple DFS or BFS will go forever. Would need an advanced algorithm that
-      // marks visited nodes so nothing repeats.
       return;
     }
 
-    const inDependencies = this.getDependencies(targetID);
-
     const completesCycle = (id, dependancies) => {
       const dependanciesArr = Object.keys(dependancies);
-
       for (let index = 0; index < dependanciesArr.length; index++) {
         const upID = dependanciesArr[index];
-        if (upID === id) {
-          return true;
-        }
-        if (completesCycle(id, this.getDependencies(upID))) {
+        if (upID === id || completesCycle(id, this.getDependencies(upID))) {
           return true;
         }
       }
       return false;
     };
 
-    return completesCycle(existingID, inDependencies);
+    return completesCycle(existingID, this.getDependencies(targetID));
   }
 }

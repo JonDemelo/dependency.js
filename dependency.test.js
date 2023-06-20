@@ -179,3 +179,64 @@ describe("Testing cycles", () => {
     );
   });
 });
+
+describe("Testing dependency management", () => {
+  test("Add two nodes, then make one dependant on the other", () => {
+    const nodeKeyRoot = "n1";
+    const nodeKeyEnd = "n2";
+
+    const dep = new Dependency();
+    dep.addNode(nodeKeyRoot);
+    dep.addNode(nodeKeyEnd);
+
+    dep.addDependency(nodeKeyEnd, nodeKeyRoot);
+
+    expect(
+      dep.hasDependencies(nodeKeyEnd) &&
+        dep.hasDependers(nodeKeyRoot) &&
+        dep.dependsOn(nodeKeyEnd, nodeKeyRoot) &&
+        dep.dependedBy(nodeKeyRoot, nodeKeyEnd)
+    ).toBe(true);
+  });
+
+  test("Add two nodes, one dependent on the other, then remove dependency", () => {
+    const nodeKeyRoot = "n1";
+    const nodeKeyEnd = "n2";
+
+    const dep = new Dependency();
+    dep.addNode(nodeKeyRoot);
+    dep.addNode(nodeKeyEnd, [nodeKeyRoot]);
+
+    dep.removeDependency(nodeKeyEnd, nodeKeyRoot);
+
+    expect(
+      !dep.hasDependencies(nodeKeyEnd) &&
+        !dep.hasDependers(nodeKeyRoot) &&
+        !dep.dependsOn(nodeKeyEnd, nodeKeyRoot) &&
+        !dep.dependedBy(nodeKeyRoot, nodeKeyEnd)
+    ).toBe(true);
+  });
+
+  test("Add three nodes, one dependent on another other, then update dependencies for both to instead only be dependent on third.", () => {
+    const nodeKeyRoot = "n1";
+    const nodeKeyEnd = "n2";
+    const nodeKeyExtra = "n3";
+
+    const dep = new Dependency();
+    dep.addNode(nodeKeyRoot);
+    dep.addNode(nodeKeyEnd, [nodeKeyRoot]);
+    dep.addNode(nodeKeyExtra);
+
+    dep.updateDependencies(nodeKeyEnd, [nodeKeyExtra]);
+    dep.updateDependencies(nodeKeyRoot, [nodeKeyExtra]);
+
+    expect(
+      !dep.hasDependers(nodeKeyRoot) &&
+        !dep.dependsOn(nodeKeyEnd, nodeKeyRoot) &&
+        !dep.dependedBy(nodeKeyRoot, nodeKeyEnd) &&
+        dep.hasDependers(nodeKeyExtra) &&
+        dep.dependedBy(nodeKeyExtra, nodeKeyRoot) &&
+        dep.dependedBy(nodeKeyExtra, nodeKeyEnd)
+    ).toBe(true);
+  });
+});
