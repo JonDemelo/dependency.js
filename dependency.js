@@ -30,7 +30,10 @@ export default class Dependency {
     }
 
     this._dependencies[newID] = this._dependencies[oldID];
-    this._dependers[newID] = this._dependers[oldID];
+
+    if (this._dependers[oldID]) {
+      this._dependers[newID] = this._dependers[oldID];
+    }
 
     delete this._dependencies[oldID];
     delete this._dependers[oldID];
@@ -105,6 +108,7 @@ export default class Dependency {
       if (Array.isArray(dependencies)) {
         dependencies = dependencies.reduce((a, v) => ({ ...a, [v]: true }), {});
       }
+
       this._dependencies[id] = {};
       this.updateDependencies(id, dependencies);
 
@@ -162,21 +166,30 @@ export default class Dependency {
       dependencies = dependencies.reduce((a, v) => ({ ...a, [v]: true }), {});
     }
 
-    if (this._dependencies[id]) {
-      Object.keys(this._dependencies[id]).forEach(
-        (k) => delete this._dependers[k][id]
-      );
+    const oldDeps = Object.keys(this._dependencies[id]);
+
+    if (oldDeps.length > 0) {
+      oldDeps.forEach((k) => {
+        delete this._dependers[k][id];
+        if (Object.keys(this._dependers[k]).length <= 0) {
+          delete this._dependers[k];
+        }
+      });
     }
 
     this._dependencies[id] = dependencies;
-    Object.keys(dependencies).forEach((k) => {
-      if (this.isNode(k)) {
-        if (!this._dependers[k]) {
-          this._dependers[k] = {};
+    const deps = Object.keys(dependencies);
+
+    if (deps.length > 0) {
+      deps.forEach((k) => {
+        if (this.isNode(k)) {
+          if (!this._dependers[k]) {
+            this._dependers[k] = {};
+          }
+          this._dependers[k][id] = true;
         }
-        this._dependers[k][id] = true;
-      }
-    });
+      });
+    }
 
     return true;
   }
