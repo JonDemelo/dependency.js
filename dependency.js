@@ -58,11 +58,19 @@ export default class Dependency {
   }
 
   hasDependers(n) {
-    return this.isNode(n) && Object.keys(this._dependers[n]).length > 0;
+    return (
+      this.isNode(n) &&
+      this._dependers[n] &&
+      Object.keys(this._dependers[n]).length > 0
+    );
   }
 
   hasDependencies(n) {
-    return this.isNode(n) && Object.keys(this._dependencies[n]).length > 0;
+    return (
+      this.isNode(n) &&
+      this._dependencies[n] &&
+      Object.keys(this._dependencies[n]).length > 0
+    );
   }
 
   dependsOn(n1, n2) {
