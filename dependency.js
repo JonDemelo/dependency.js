@@ -24,6 +24,32 @@ export default class Dependency {
     return this.getNumberOfNodes() > 0;
   }
 
+  changeID(oldID, newID) {
+    if (!this.isNode(oldID) || this.isNode(newID)) {
+      return false;
+    }
+
+    this._dependencies[newID] = this._dependencies[oldID];
+    this._dependers[newID] = this._dependers[oldID];
+
+    delete this._dependencies[oldID];
+    delete this._dependers[oldID];
+
+    Object.keys(this._dependencies).forEach((k) => {
+      if (k[oldID]) {
+        k[newID] = true;
+        delete k[oldID];
+      }
+    });
+
+    Object.keys(this._dependers).forEach((k) => {
+      if (k[oldID]) {
+        k[newID] = true;
+        delete k[oldID];
+      }
+    });
+  }
+
   isNode(n) {
     return this._dependencies[n] !== undefined;
   }
